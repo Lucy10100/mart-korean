@@ -800,7 +800,7 @@ const App = {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ko-KR';
     if (App.voiceKo) u.voice = App.voiceKo;
-    u.rate = opts.slow ? 0.7 : 0.95;
+    u.rate = opts.slow ? 0.55 : 0.95;
     speechSynthesis.speak(u);
   },
 
