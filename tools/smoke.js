@@ -4,7 +4,8 @@
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
-const SHOTS = process.env.SHOTS || path.join(__dirname, '../dist');
+const SHOTS = process.env.SHOTS || require('os').tmpdir();
+const TARGET = process.argv[2] || path.join(__dirname, '../dist/index.html');
 const results = [];
 const check = (name, ok, extra = '') => {
   results.push({ name, ok });
@@ -23,7 +24,7 @@ const check = (name, ok, extra = '') => {
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
-  await page.goto('file://' + path.join(__dirname, '../dist/index.html'), { waitUntil: 'load' });
+  await page.goto('file://' + path.resolve(TARGET), { waitUntil: 'load' });
 
   // 1. start overlay → main
   await page.click('#start-btn');

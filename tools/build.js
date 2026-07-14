@@ -27,6 +27,15 @@ const out = path.join(outDir, 'index.html');
 fs.writeFileSync(out, html);
 console.log(`dist/index.html written (${Math.round(html.length / 1024)} KB)`);
 
+// Optional version snapshot: `npm run build -- 0.5x` also writes dist/index.0.5x.html.
+// Snapshots are identical, fully self-contained copies — safe to share on their own.
+const version = process.argv[2];
+if (version) {
+  const snap = path.join(outDir, `index.${version}.html`);
+  fs.writeFileSync(snap, html);
+  console.log(`dist/index.${version}.html written (version snapshot)`);
+}
+
 // Artifact variant: same app without the document shell (the artifact host provides
 // doctype/head/body), with a <title> so the tab is named.
 const bodyInner = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>'));
