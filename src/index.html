@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mart Korean</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="start-overlay">
+  <div class="start-box">
+    <div class="start-emoji">🛒</div>
+    <h1>Mart Korean</h1>
+    <p class="start-sub">Korean for the mart &amp; daily life<br><span class="bis">Korean para sa tindahan ug adlaw-adlaw</span></p>
+    <button id="start-btn" type="button">Tap to start 🔊</button>
+  </div>
+</div>
+
+<div id="no-voice-banner" hidden>
+  ⚠️ No Korean voice on this device — you can still read &amp; learn.
+</div>
+
+<header id="app-header">
+  <div class="header-title">🛒 Mart Korean</div>
+  <div class="header-right">
+    <span id="learned-count" title="Phrases you know"></span>
+    <button id="pdf-btn" type="button" title="Download the cheat sheet">PDF ⬇️</button>
+  </div>
+</header>
+
+<main id="main">
+  <section id="view-sounds" class="view"></section>
+  <section id="view-phrases" class="view"></section>
+  <section id="view-products" class="view"></section>
+  <section id="view-hangul" class="view"></section>
+  <section id="view-quiz" class="view"></section>
+</main>
+
+<nav id="tabbar">
+  <button data-view="sounds" type="button"><span class="tab-icon">🔤</span>Sounds</button>
+  <button data-view="phrases" type="button" class="active"><span class="tab-icon">💬</span>Phrases</button>
+  <button data-view="products" type="button"><span class="tab-icon">🛒</span>Products</button>
+  <button data-view="hangul" type="button"><span class="tab-icon">ㄱ</span>Hangul</button>
+  <button data-view="quiz" type="button"><span class="tab-icon">🎯</span>Quiz</button>
+</nav>
+
+<script type="text/plain" id="pdf-data">__PDF_BASE64__</script>
+<script src="data.js"></script>
+<script src="quiz.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
