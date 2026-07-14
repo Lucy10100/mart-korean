@@ -1,0 +1,10 @@
+{
+  "name": "mart-korean",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node --test",
+    "pdf": "node tools/make-pdf.js",
+    "build": "node tools/build.js"
+  }
+}
