@@ -267,6 +267,187 @@ function renderHangul() {
     </div>`).join('')}`;
 }
 
+/* ---------- Quiz UI ---------- */
+
+const QuizUI = {
+  SESSION_LEN: 10,
+  state: { mode: null, qIndex: 0, score: 0, current: null, answered: false, revealed: false, usedKo: [] },
+  _pools: null,
+
+  pools() {
+    if (!QuizUI._pools) QuizUI._pools = Quiz.pools(APP_DATA);
+    return QuizUI._pools;
+  },
+
+  start(mode) {
+    QuizUI.state = { mode, qIndex: 0, score: 0, current: null, answered: false, revealed: false, usedKo: [] };
+    QuizUI.nextQuestion();
+  },
+
+  nextQuestion() {
+    const s = QuizUI.state;
+    const pool = QuizUI.pools()[s.mode];
+    let q = Quiz.makeQuestion(pool, Math.random);
+    for (let tries = 0; tries < 20 && s.usedKo.includes(q.item.ko); tries++)
+      q = Quiz.makeQuestion(pool, Math.random);
+    s.usedKo.push(q.item.ko);
+    s.current = q;
+    s.answered = false;
+    s.revealed = false;
+    QuizUI.rerender();
+    if (s.mode === 'listening') setTimeout(() => App.speak(q.item.ko), 250);
+  },
+
+  rerender() {
+    const el = document.getElementById('view-quiz');
+    if (el) el.innerHTML = QuizUI.render();
+  },
+
+  handleClick(e) {
+    const mode = e.target.closest('[data-quiz-mode]');
+    if (mode) { QuizUI.start(mode.dataset.quizMode); return true; }
+    const exit = e.target.closest('[data-quiz-exit]');
+    if (exit) { QuizUI.state.mode = null; QuizUI.rerender(); return true; }
+    const ans = e.target.closest('[data-quiz-answer]');
+    if (ans && !QuizUI.state.answered) {
+      const s = QuizUI.state;
+      s.answered = true;
+      s.pickedIndex = Number(ans.dataset.quizAnswer);
+      if (s.pickedIndex === s.current.answerIndex) s.score++;
+      QuizUI.rerender();
+      if (s.mode === 'reading') setTimeout(() => App.speak(s.current.item.ko), 250);
+      return true;
+    }
+    const reveal = e.target.closest('[data-quiz-reveal]');
+    if (reveal) {
+      QuizUI.state.revealed = true;
+      QuizUI.rerender();
+      setTimeout(() => App.speak(QuizUI.state.current.item.ko), 200);
+      return true;
+    }
+    const self = e.target.closest('[data-quiz-self]');
+    if (self) {
+      if (self.dataset.quizSelf === '1') QuizUI.state.score++;
+      QuizUI.advance();
+      return true;
+    }
+    const next = e.target.closest('[data-quiz-next]');
+    if (next) { QuizUI.advance(); return true; }
+    return false;
+  },
+
+  advance() {
+    const s = QuizUI.state;
+    s.qIndex++;
+    if (s.qIndex >= QuizUI.SESSION_LEN) { s.current = null; QuizUI.rerender(); }
+    else QuizUI.nextQuestion();
+  },
+
+  render() {
+    const s = QuizUI.state;
+    if (!s.mode) {
+      return `<h2>🎯 Quiz</h2>
+      <p class="section-note">10 questions per round. Pick a mode.<br><span class="bis">10 ka pangutana kada round. Pili og mode.</span></p>
+      <div class="quiz-modes">
+        <button type="button" class="quiz-mode-btn" data-quiz-mode="listening">
+          <div class="qm-title">👂 Listening</div>
+          <div class="qm-sub">Hear Korean, pick the meaning · Paminawa, pilia ang pasabot</div>
+        </button>
+        <button type="button" class="quiz-mode-btn" data-quiz-mode="speaking">
+          <div class="qm-title">🗣 Speaking</div>
+          <div class="qm-sub">Say it in Korean, then check · Isulti sa Korean, dayon i-check</div>
+        </button>
+        <button type="button" class="quiz-mode-btn" data-quiz-mode="reading">
+          <div class="qm-title">🏷 Label Reading</div>
+          <div class="qm-sub">Read Hangul labels, pick the meaning · Basaha ang Hangul</div>
+        </button>
+      </div>`;
+    }
+    if (!s.current) {
+      const great = s.score >= 8;
+      return `<div class="quiz-result card">
+        <div>${great ? '🎉' : '💪'}</div>
+        <div class="qr-score">${s.score} / ${QuizUI.SESSION_LEN}</div>
+        <p class="section-note">${great ? 'Great job! · Maayo kaayo!' : 'Keep going! · Padayon lang!'}</p>
+        <button type="button" class="quiz-primary" data-quiz-mode="${s.mode}">Try again 🔁</button>
+        <button type="button" class="quiz-next" style="background:var(--chip);color:var(--ink)" data-quiz-exit>All modes</button>
+      </div>`;
+    }
+
+    const q = s.current;
+    const head = `
+      <button type="button" class="back-btn" data-quiz-exit>‹ Quiz modes</button>
+      <div class="quiz-progress">Question ${s.qIndex + 1} / ${QuizUI.SESSION_LEN} · Score ${s.score}</div>`;
+
+    const choices = show => `
+      <div class="quiz-choices">
+        ${q.choices.map((c, i) => {
+          let cls = '';
+          if (show) {
+            if (i === q.answerIndex) cls = 'correct';
+            else if (i === s.pickedIndex) cls = 'wrong';
+          }
+          return `<button type="button" class="quiz-choice ${cls}" data-quiz-answer="${i}">
+            ${esc(c.en)}<span class="qc-bis">${esc(c.bis)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+      ${show ? `<button type="button" class="quiz-next" data-quiz-next>Next ›</button>` : ''}`;
+
+    if (s.mode === 'listening') {
+      return `${head}
+      <div class="card">
+        <div class="quiz-prompt">
+          ${s.answered ? `<div class="qp-ko">${esc(q.item.ko)}</div><div class="qp-say">${esc(q.item.say)}</div>`
+                       : `<div class="qp-ko">🔊</div><div class="qp-say">Listen…</div>`}
+        </div>
+        <div class="quiz-audio-btns">
+          <button type="button" data-say="${attr(q.item.ko)}">🔁 Again</button>
+          <button type="button" data-say="${attr(q.item.ko)}" data-slow="1">🐢 Slow</button>
+        </div>
+        ${choices(s.answered)}
+      </div>`;
+    }
+
+    if (s.mode === 'reading') {
+      return `${head}
+      <div class="card">
+        <div class="quiz-prompt">
+          <div class="qp-ko">${esc(q.item.ko)}</div>
+          ${s.answered ? `<div class="qp-say">${esc(q.item.say)}</div>` : ''}
+        </div>
+        ${s.answered ? `<div class="quiz-audio-btns"><button type="button" data-say="${attr(q.item.ko)}">🔊 Hear it</button></div>` : ''}
+        ${choices(s.answered)}
+      </div>`;
+    }
+
+    // speaking
+    return `${head}
+    <div class="card">
+      <div class="quiz-prompt">
+        <div class="qp-en">${esc(q.item.en)}</div>
+        <div class="qp-bis">${esc(q.item.bis)}</div>
+        ${q.item.note ? `<div class="p-note">💡 ${esc(q.item.note)}</div>` : ''}
+      </div>
+      ${!s.revealed
+        ? `<p class="section-note" style="text-align:center">Say it out loud in Korean, then check.<br><span class="bis">Isulti og kusog sa Korean, dayon i-check.</span></p>
+           <button type="button" class="quiz-primary" data-quiz-reveal>Show answer 🔊</button>`
+        : `<div class="quiz-prompt">
+             <div class="qp-ko">${esc(q.item.ko)}</div>
+             <div class="qp-say">${esc(q.item.say)}</div>
+           </div>
+           <div class="quiz-audio-btns">
+             <button type="button" data-say="${attr(q.item.ko)}">🔁 Again</button>
+             <button type="button" data-say="${attr(q.item.ko)}" data-slow="1">🐢 Slow</button>
+           </div>
+           <div class="quiz-self">
+             <button type="button" class="self-yes" data-quiz-self="1">I said it right 👍</button>
+             <button type="button" class="self-no" data-quiz-self="0">Not yet 👎</button>
+           </div>`}
+    </div>`;
+  },
+};
+
 /* ---------- PDF ---------- */
 
 function downloadPdf() {
