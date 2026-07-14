@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/lucy/mart-korean/assets/cheatsheet.pdf\",\"pages\":\"1-3\"}",
+  "error": "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-utils`) to enable PDF page rendering.",
+  "timestamp": "2026-07-14T09:13:34.568Z",
+  "retry_count": 1
+}
