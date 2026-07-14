@@ -23,6 +23,7 @@
 npm test        # 데이터 무결성 + 퀴즈 로직 + 빌드 산출물 검증
 npm run pdf     # assets/cheatsheet.pdf 재생성 (헤드리스 크롬 필요)
 npm run build   # dist/index.html + dist/artifact.html 빌드
+npm run build -- 0.6x   # + dist/index.0.6x.html 버전 스냅샷도 저장
 node tools/smoke.js  # 헤드리스 브라우저 E2E 스모크 (puppeteer-core)
 ```
 
