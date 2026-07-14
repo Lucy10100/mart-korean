@@ -26,3 +26,12 @@ fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, 'index.html');
 fs.writeFileSync(out, html);
 console.log(`dist/index.html written (${Math.round(html.length / 1024)} KB)`);
+
+// Artifact variant: same app without the document shell (the artifact host provides
+// doctype/head/body), with a <title> so the tab is named.
+const bodyInner = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>'));
+const styleStart = html.indexOf('<style>');
+const styleBlock = html.slice(styleStart, html.indexOf('</style>') + 8);
+const artifact = `<title>Mart Korean</title>\n${styleBlock}\n${bodyInner}`;
+fs.writeFileSync(path.join(outDir, 'artifact.html'), artifact);
+console.log(`dist/artifact.html written (${Math.round(artifact.length / 1024)} KB)`);

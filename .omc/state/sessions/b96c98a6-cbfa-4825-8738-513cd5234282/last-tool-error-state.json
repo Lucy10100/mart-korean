@@ -1,7 +1,7 @@
 {
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"/Users/lucy/mart-korean/assets/cheatsheet.pdf\",\"pages\":\"1-3\"}",
-  "error": "pdftoppm is not installed. Install poppler-utils (e.g. `brew install poppler` or `apt-get install poppler-utils`) to enable PDF page rendering.",
-  "timestamp": "2026-07-14T09:13:34.568Z",
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"SHOTS=/private/tmp/claude-501/-Users-lucy/b96c98a6-cbfa-4825-8738-513cd5234282/scratchpad node tools/smoke.js 2>&1\",\"description\":\"Run headless browser smoke test\"}",
+  "error": "Exit code 1\nPASS: start overlay dismissed\nPASS: phrases lesson list renders — 7 rows\nPASS: lesson opens with phrase cards — 11 cards\nPASS: learn toggle updates counter — 0 / 226 learned → 1 / 226 learned\nPASS: daily group shows 5 lessons — 5 rows\nPASS: products tab renders — 8 chips, 11 cards\nPASS: category switch + pack label\nPASS: sounds tab renders 7 sections — 7\nPASS: hangul letter tiles render — 38 tiles\nPASS: quiz marks the correct answer\nPASS: quiz session reaches result screen — 2 / 10\nS...",
+  "timestamp": "2026-07-14T09:15:58.543Z",
   "retry_count": 1
 }
