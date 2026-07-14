@@ -24,6 +24,16 @@ const check = (name, ok, extra = '') => {
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
 
+  // Instrument speechSynthesis before app code runs: record cancel/speak timings.
+  await page.evaluateOnNewDocument(() => {
+    window.__tts = { events: [] };
+    const ss = window.speechSynthesis;
+    const origCancel = ss.cancel.bind(ss);
+    const origSpeak = ss.speak.bind(ss);
+    ss.cancel = () => { window.__tts.events.push(['cancel', performance.now()]); return origCancel(); };
+    ss.speak = u => { window.__tts.events.push(['speak', performance.now(), u.text]); return origSpeak(u); };
+  });
+
   await page.goto('file://' + path.resolve(TARGET), { waitUntil: 'load' });
 
   // 1. start overlay → main
@@ -107,7 +117,24 @@ const check = (name, ok, extra = '') => {
   });
   check('PDF button enabled with embedded payload', pdfOk);
 
-  // 11. no JS errors anywhere in the run
+  // 11. onset-clipping guard: real utterances must start >=100ms after the preceding cancel()
+  const gapInfo = await page.evaluate(async () => {
+    window.__tts.events.length = 0;
+    document.querySelector('#tabbar [data-view="phrases"]').click();
+    document.querySelector('#view-phrases .list-row').click();
+    document.querySelector('#view-phrases .p-ko').click();
+    await new Promise(r => setTimeout(r, 400));
+    const ev = window.__tts.events;
+    const si = ev.findIndex(e => e[0] === 'speak' && e[2] && e[2].length > 0);
+    if (si < 1) return { ok: false, why: 'no speak event captured' };
+    const prevCancel = ev.slice(0, si).reverse().find(e => e[0] === 'cancel');
+    if (!prevCancel) return { ok: false, why: 'no cancel before speak' };
+    const gap = ev[si][1] - prevCancel[1];
+    return { ok: gap >= 100, why: `cancel→speak gap ${Math.round(gap)}ms` };
+  });
+  check('speak waits >=100ms after cancel (onset clip guard)', gapInfo.ok, gapInfo.why);
+
+  // 12. no JS errors anywhere in the run
   check('no console/page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await browser.close();

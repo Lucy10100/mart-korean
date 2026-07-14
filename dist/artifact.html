@@ -787,14 +787,18 @@ const App = {
     speechSynthesis.onvoiceschanged = pickVoice;
   },
 
+  _speakTimer: null,
   speak(text, opts = {}) {
     if (!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
+    clearTimeout(App._speakTimer);
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ko-KR';
     if (App.voiceKo) u.voice = App.voiceKo;
     u.rate = opts.slow ? 0.55 : 0.95;
-    speechSynthesis.speak(u);
+    // Speaking in the same tick as cancel() clips the first syllable on iOS/Safari —
+    // give the engine time to settle before starting the new utterance.
+    App._speakTimer = setTimeout(() => speechSynthesis.speak(u), 120);
   },
 
   totalLearnable: 0,
