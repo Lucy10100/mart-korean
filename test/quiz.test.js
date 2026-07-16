@@ -32,6 +32,28 @@ test('makeQuestion works on the reading pool too', () => {
   }
 });
 
+test('recordScore tracks best, recent (max 5), and play count per mode', () => {
+  let stats = {};
+  stats = Quiz.recordScore(stats, 'listening', 6);
+  stats = Quiz.recordScore(stats, 'listening', 9);
+  stats = Quiz.recordScore(stats, 'listening', 4);
+  assert.equal(stats.listening.best, 9);
+  assert.equal(stats.listening.plays, 3);
+  assert.deepEqual(stats.listening.recent, [4, 9, 6]);
+  for (let i = 0; i < 10; i++) stats = Quiz.recordScore(stats, 'listening', i);
+  assert.equal(stats.listening.recent.length, 5);
+  assert.equal(stats.listening.best, 9);
+  stats = Quiz.recordScore(stats, 'reading', 10);
+  assert.equal(stats.reading.best, 10);
+  assert.equal(stats.listening.plays, 13);
+});
+
+test('recordScore tolerates corrupt input', () => {
+  const s = Quiz.recordScore(null, 'speaking', 7);
+  assert.equal(s.speaking.best, 7);
+  assert.equal(s.speaking.plays, 1);
+});
+
 test('makeRng is deterministic', () => {
   const a = Quiz.makeRng(7), b = Quiz.makeRng(7);
   assert.equal(a(), b());

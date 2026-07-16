@@ -343,8 +343,20 @@ const QuizUI = {
   advance() {
     const s = QuizUI.state;
     s.qIndex++;
-    if (s.qIndex >= QuizUI.SESSION_LEN) { s.current = null; QuizUI.rerender(); }
-    else QuizUI.nextQuestion();
+    if (s.qIndex >= QuizUI.SESSION_LEN) {
+      const stats = App.store.get('quizStats', {});
+      const prevBest = (stats[s.mode] && stats[s.mode].best) || 0;
+      s.isNewBest = s.score > prevBest && s.score > 0;
+      App.store.set('quizStats', Quiz.recordScore(stats, s.mode, s.score));
+      s.current = null;
+      QuizUI.rerender();
+    } else QuizUI.nextQuestion();
+  },
+
+  statsLine(mode) {
+    const st = App.store.get('quizStats', {})[mode];
+    if (!st || !st.plays) return '';
+    return `<div class="qm-stats">🏆 Best ${st.best}/10 · Last ${st.recent[0]}/10 · ${st.plays} rounds</div>`;
   },
 
   render() {
@@ -356,22 +368,28 @@ const QuizUI = {
         <button type="button" class="quiz-mode-btn" data-quiz-mode="listening">
           <div class="qm-title">👂 Listening</div>
           <div class="qm-sub">Hear Korean, pick the meaning · Paminawa, pilia ang pasabot</div>
+          ${QuizUI.statsLine('listening')}
         </button>
         <button type="button" class="quiz-mode-btn" data-quiz-mode="speaking">
           <div class="qm-title">🗣 Speaking</div>
           <div class="qm-sub">Say it in Korean, then check · Isulti sa Korean, dayon i-check</div>
+          ${QuizUI.statsLine('speaking')}
         </button>
         <button type="button" class="quiz-mode-btn" data-quiz-mode="reading">
           <div class="qm-title">🏷 Label Reading</div>
           <div class="qm-sub">Read Hangul labels, pick the meaning · Basaha ang Hangul</div>
+          ${QuizUI.statsLine('reading')}
         </button>
       </div>`;
     }
     if (!s.current) {
       const great = s.score >= 8;
+      const best = (App.store.get('quizStats', {})[s.mode] || {}).best || 0;
       return `<div class="quiz-result card">
         <div>${great ? '🎉' : '💪'}</div>
         <div class="qr-score">${s.score} / ${QuizUI.SESSION_LEN}</div>
+        ${s.isNewBest ? `<div class="qm-stats">🏆 New best! · Bag-ong record!</div>`
+                      : `<div class="qm-stats">Best: ${best} / ${QuizUI.SESSION_LEN}</div>`}
         <p class="section-note">${great ? 'Great job! · Maayo kaayo!' : 'Keep going! · Padayon lang!'}</p>
         <button type="button" class="quiz-primary" data-quiz-mode="${s.mode}">Try again 🔁</button>
         <button type="button" class="quiz-next" style="background:var(--chip);color:var(--ink)" data-quiz-exit>All modes</button>

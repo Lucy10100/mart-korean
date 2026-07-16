@@ -188,6 +188,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .quiz-mode-btn .qm-title { font-weight: 800; font-size: 1.05rem; }
 .quiz-mode-btn .qm-sub { color: var(--ink-2); font-size: .85rem; margin-top: 3px; }
 .quiz-progress { color: var(--ink-2); font-size: .85rem; margin-bottom: 10px; }
+.qm-stats { color: var(--accent); font-size: .82rem; font-weight: 700; margin-top: 6px; }
 .quiz-prompt { text-align: center; padding: 20px 10px; }
 .quiz-prompt .qp-ko { font-size: 2rem; font-weight: 800; line-height: 1.4; }
 .quiz-prompt .qp-say { color: var(--say); font-family: ui-monospace, Menlo, monospace; margin-top: 6px; }
@@ -728,6 +729,18 @@ const Quiz = {
     };
   },
 
+  // Pure score-history update: { [mode]: { best, recent (newest first, max 5), plays } }
+  recordScore(stats, mode, score) {
+    const s = stats && typeof stats === 'object' ? { ...stats } : {};
+    const prev = s[mode] && typeof s[mode] === 'object' ? s[mode] : { best: 0, recent: [], plays: 0 };
+    s[mode] = {
+      best: Math.max(prev.best || 0, score),
+      recent: [score, ...(Array.isArray(prev.recent) ? prev.recent : [])].slice(0, 5),
+      plays: (prev.plays || 0) + 1,
+    };
+    return s;
+  },
+
   makeQuestion(pool, rng) {
     const pick = arr => arr[Math.floor(rng() * arr.length)];
     const item = pick(pool);
@@ -1094,8 +1107,20 @@ const QuizUI = {
   advance() {
     const s = QuizUI.state;
     s.qIndex++;
-    if (s.qIndex >= QuizUI.SESSION_LEN) { s.current = null; QuizUI.rerender(); }
-    else QuizUI.nextQuestion();
+    if (s.qIndex >= QuizUI.SESSION_LEN) {
+      const stats = App.store.get('quizStats', {});
+      const prevBest = (stats[s.mode] && stats[s.mode].best) || 0;
+      s.isNewBest = s.score > prevBest && s.score > 0;
+      App.store.set('quizStats', Quiz.recordScore(stats, s.mode, s.score));
+      s.current = null;
+      QuizUI.rerender();
+    } else QuizUI.nextQuestion();
+  },
+
+  statsLine(mode) {
+    const st = App.store.get('quizStats', {})[mode];
+    if (!st || !st.plays) return '';
+    return `<div class="qm-stats">🏆 Best ${st.best}/10 · Last ${st.recent[0]}/10 · ${st.plays} rounds</div>`;
   },
 
   render() {
@@ -1107,22 +1132,28 @@ const QuizUI = {
         <button type="button" class="quiz-mode-btn" data-quiz-mode="listening">
           <div class="qm-title">👂 Listening</div>
           <div class="qm-sub">Hear Korean, pick the meaning · Paminawa, pilia ang pasabot</div>
+          ${QuizUI.statsLine('listening')}
         </button>
         <button type="button" class="quiz-mode-btn" data-quiz-mode="speaking">
           <div class="qm-title">🗣 Speaking</div>
           <div class="qm-sub">Say it in Korean, then check · Isulti sa Korean, dayon i-check</div>
+          ${QuizUI.statsLine('speaking')}
         </button>
         <button type="button" class="quiz-mode-btn" data-quiz-mode="reading">
           <div class="qm-title">🏷 Label Reading</div>
           <div class="qm-sub">Read Hangul labels, pick the meaning · Basaha ang Hangul</div>
+          ${QuizUI.statsLine('reading')}
         </button>
       </div>`;
     }
     if (!s.current) {
       const great = s.score >= 8;
+      const best = (App.store.get('quizStats', {})[s.mode] || {}).best || 0;
       return `<div class="quiz-result card">
         <div>${great ? '🎉' : '💪'}</div>
         <div class="qr-score">${s.score} / ${QuizUI.SESSION_LEN}</div>
+        ${s.isNewBest ? `<div class="qm-stats">🏆 New best! · Bag-ong record!</div>`
+                      : `<div class="qm-stats">Best: ${best} / ${QuizUI.SESSION_LEN}</div>`}
         <p class="section-note">${great ? 'Great job! · Maayo kaayo!' : 'Keep going! · Padayon lang!'}</p>
         <button type="button" class="quiz-primary" data-quiz-mode="${s.mode}">Try again 🔁</button>
         <button type="button" class="quiz-next" style="background:var(--chip);color:var(--ink)" data-quiz-exit>All modes</button>

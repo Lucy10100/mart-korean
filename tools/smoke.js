@@ -101,9 +101,13 @@ const check = (name, ok, extra = '') => {
   const result = await page.$eval('.qr-score', el => el.textContent);
   check('quiz session reaches result screen', /\/ 10/.test(result), result.trim());
 
-  // 9. speaking mode reveal flow
+  // 9. score history: mode screen shows saved best after a finished round
   await page.click('[data-quiz-exit]');
   await page.waitForSelector('[data-quiz-mode="speaking"]');
+  const statsShown = await page.$eval('#view-quiz', el => /Best \d+\/10/.test(el.textContent));
+  check('quiz score history shown on mode screen', statsShown);
+
+  // 10. speaking mode reveal flow
   await page.click('[data-quiz-mode="speaking"]');
   await page.waitForSelector('[data-quiz-reveal]');
   await page.click('[data-quiz-reveal]');

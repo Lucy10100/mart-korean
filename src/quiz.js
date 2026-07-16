@@ -29,6 +29,18 @@ const Quiz = {
     };
   },
 
+  // Pure score-history update: { [mode]: { best, recent (newest first, max 5), plays } }
+  recordScore(stats, mode, score) {
+    const s = stats && typeof stats === 'object' ? { ...stats } : {};
+    const prev = s[mode] && typeof s[mode] === 'object' ? s[mode] : { best: 0, recent: [], plays: 0 };
+    s[mode] = {
+      best: Math.max(prev.best || 0, score),
+      recent: [score, ...(Array.isArray(prev.recent) ? prev.recent : [])].slice(0, 5),
+      plays: (prev.plays || 0) + 1,
+    };
+    return s;
+  },
+
   makeQuestion(pool, rng) {
     const pick = arr => arr[Math.floor(rng() * arr.length)];
     const item = pick(pool);
