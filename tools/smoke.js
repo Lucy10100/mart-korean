@@ -34,7 +34,8 @@ const check = (name, ok, extra = '') => {
     ss.speak = u => { window.__tts.events.push(['speak', performance.now(), u.text]); return origSpeak(u); };
   });
 
-  await page.goto('file://' + path.resolve(TARGET), { waitUntil: 'load' });
+  const url = /^https?:/.test(TARGET) ? TARGET : 'file://' + path.resolve(TARGET);
+  await page.goto(url, { waitUntil: 'load' });
 
   // 1. start overlay → main
   await page.click('#start-btn');
